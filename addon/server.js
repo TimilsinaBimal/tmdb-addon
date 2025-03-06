@@ -1,20 +1,19 @@
-const addon = require('./index.js')
-const PORT = process.env.PORT
-const analyticsMiddleware = require('./middleware/analytics.middleware');
-const analytics = require('./utils/analytics');
+const addon = require("./index.js");
+const analyticsMiddleware = require("./middleware/analytics.middleware");
+const analytics = require("./utils/analytics");
 
-addon.listen(PORT, function () {
-  console.log(`Addon active on port ${PORT}.`);
-  console.log(`http://127.0.0.1:${PORT}/`);
-});
-
+// Apply middleware (if addon is an Express app)
 addon.use(analyticsMiddleware());
 
-addon.get('/configure', (req, res, next) => {
-    analytics.trackInstall({
-        language: req.query.language || 'en',
-        catalogs: req.query.catalogs ? req.query.catalogs.split(',') : [],
-        integrations: req.query.integrations ? req.query.integrations.split(',') : []
-    });
-    next();
+// Define the `/configure` route
+addon.get("/configure", (req, res) => {
+  analytics.trackInstall({
+    language: req.query.language || "en",
+    catalogs: req.query.catalogs ? req.query.catalogs.split(",") : [],
+    integrations: req.query.integrations ? req.query.integrations.split(",") : [],
+  });
+  res.status(200).send("Configuration tracked successfully.");
 });
+
+// Export for serverless deployment (Vercel, AWS Lambda, etc.)
+module.exports = addon;
