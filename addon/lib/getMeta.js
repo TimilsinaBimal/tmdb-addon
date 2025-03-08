@@ -13,6 +13,8 @@ const blacklistLogoUrls = [
 ];
 
 async function getMeta(type, language, tmdbId, rpdbkey) {
+  // Extract country code from ISO 3166-1 language format (e.g., "en-US")
+  const country = language.slice(-2);
   if (type === "movie") {
     const meta = await moviedb
       .movieInfo({id: tmdbId, language, append_to_response: "videos,credits,release_dates",})
@@ -22,7 +24,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         const releaseDates = res.release_dates.results;
         let certification = "";
         for (const releaseDate of releaseDates) {
-          if (releaseDate.iso_3166_1 === "US") {
+          if (releaseDate.iso_3166_1 === country) {
             for (const date of releaseDate.release_dates) {
               if (date.certification !== "") {
                 certification = date.certification;
@@ -32,10 +34,9 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
             break;
           }
         }
-        const imdbRating = res.imdb_id
-          ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toString()
-          : res.vote_average.toString();
-        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
+        const imdbRating = res.imdb_id ? await getImdbRating(res.imdb_id, type): "N/A";
+
+        const imdbCertification = (certification ? certification : "") + (imdbRating ? "\u2003"+ imdbRating : "\u2003N/A");
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -89,22 +90,17 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
     const meta = await moviedb
       .tvInfo({id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings",})
       .then(async (res) => {
-        const imdbRating = res.external_ids.imdb_id
-          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toString()
-          : res.vote_average.toString();
+        const imdbRating = res.external_ids.imdb_id ? await getImdbRating(res.external_ids.imdb_id, type): "N/A";
         const runtime = res.episode_run_time?.[0] ?? res.last_episode_to_air?.runtime ?? res.next_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
         let certification = "";
         for (const ratings of contentRatings) {
-          if (ratings.iso_3166_1 === "US") {
-              if (ratings.rating !== "") {
-                certification = ratings.rating;
-                break;
-            }
-            break;
+          if (ratings.iso_3166_1 === country) {
+              certification = ratings.rating;
+              break;
           }
         }
-        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
+        const imdbCertification = (certification ? certification : "") + (imdbRating ? "\u2003"+ imdbRating : "\u2003N/A");
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
