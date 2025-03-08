@@ -38,7 +38,8 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
         : res.vote_average.toFixed(1).toString();
 
-        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
+        // const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification} | ${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -95,7 +96,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         const imdbRating = res.external_ids.imdb_id
         ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toString()
         : res.vote_average.toString();
-        const runtime = res.episode_run_time?.[0] ?? res.last_episode_to_air?.runtime ?? res.next_episode_to_air?.runtime ?? null;
+        const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
         let certification = "";
         for (const ratings of contentRatings) {
@@ -104,7 +105,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
               break;
           }
         }
-        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification} | ${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
