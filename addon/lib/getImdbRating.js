@@ -2,7 +2,7 @@ const axios = require('axios');
 
 async function getImdbRating(imdbId, type) {
   try {
-    const response = await axios.get(`https://v3-cinemeta.strem.io/meta/${type}/${imdbId}.json`);
+    const response = await axios.get(`https://cinemeta-live.strem.io/meta/${type}/${imdbId}.json`);
     const data = response.data.meta;
     return data?.imdbRating || "N/A";
   } catch (error) {
