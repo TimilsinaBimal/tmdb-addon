@@ -34,9 +34,11 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
             break;
           }
         }
-        const imdbRating = res.imdb_id ? await getImdbRating(res.imdb_id, type): "N/A";
+        const imdbRating = res.imdb_id
+        ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
+        : res.vote_average.toFixed(1).toString();
 
-        const imdbCertification = (certification ? certification : "") + (imdbRating ? "\u2003"+ imdbRating : "\u2003N/A");
+        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -90,7 +92,9 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
     const meta = await moviedb
       .tvInfo({id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings",})
       .then(async (res) => {
-        const imdbRating = res.external_ids.imdb_id ? await getImdbRating(res.external_ids.imdb_id, type): "N/A";
+        const imdbRating = res.external_ids.imdb_id
+        ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toString()
+        : res.vote_average.toString();
         const runtime = res.episode_run_time?.[0] ?? res.last_episode_to_air?.runtime ?? res.next_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
         let certification = "";
@@ -100,7 +104,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
               break;
           }
         }
-        const imdbCertification = (certification ? certification : "") + (imdbRating ? "\u2003"+ imdbRating : "\u2003N/A");
+        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
