@@ -102,6 +102,7 @@ addon.get("/:catalogChoices?/manifest.json", async (req, res) => {
 });
 
 
+
 // New function to fetch metadata with caching
 async function fetchMetadataWithCaching(type, language, id, rpdbkey) {
   return cacheWrapMeta(`${language}:${type}:${id}`, async () => {
@@ -155,6 +156,7 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
     staleRevalidate: 7 * 24 * 60 * 60,
     staleError: 14 * 24 * 60 * 60,
   };
+
   // Use the new fetchMetadataWithCaching function for each item
   metas.metas = await Promise.all(
     metas.metas.map(async (meta) => {

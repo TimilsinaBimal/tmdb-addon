@@ -74,7 +74,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         };
         try {
           resp.logo = await getLogo(tmdbId, language, res.original_language);
-        } catch(e) {
+        } catch (e) {
           console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
         }
@@ -141,7 +141,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         };
         try {
           resp.logo = await getTvLogo(res.external_ids.tvdb_id, res.id, language, res.original_language);
-        } catch(e) {
+        } catch (e) {
           console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
         }
@@ -153,7 +153,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         }
         try {
           resp.videos = await getEpisodes(language, tmdbId, res.external_ids.imdb_id, res.seasons);
-        } catch(e) {
+        } catch (e) {
           console.log(`warning: episodes could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
         }

@@ -6,6 +6,7 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   base: '/configure/',
+  publicDir: "configure/public", // <== Add this line
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -16,3 +17,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+
+
