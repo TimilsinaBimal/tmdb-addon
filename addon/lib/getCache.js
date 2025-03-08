@@ -5,8 +5,8 @@ const GLOBAL_KEY_PREFIX = 'tmdb-addon';
 const META_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|meta`;
 const CATALOG_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|catalog`;
 
-const META_TTL = process.env.META_TTL || 7 * 24 * 60 * 60; // 7 day
-const CATALOG_TTL = process.env.CATALOG_TTL || 1 * 24 * 60 * 60; // 1 day
+const META_TTL = process.env.META_TTL || 12 * 60 * 60; // 12 hours
+const CATALOG_TTL = process.env.CATALOG_TTL || 12 * 60 * 60; // 12 hours
 
 const MONGO_URI = process.env.MONGODB_URI;
 const NO_CACHE = process.env.NO_CACHE || false;
@@ -30,7 +30,7 @@ function initiateCache() {
   } else {
     return cacheManager.caching({
       store: 'memory',
-      ttl: META_TTL
+      ttl: META_TTL 
     });
   }
 }

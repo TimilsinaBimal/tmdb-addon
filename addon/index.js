@@ -143,9 +143,9 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
   }
 
   const cacheOpts = {
-    cacheMaxAge: 1 * 24 * 60 * 60,
-    staleRevalidate: 7 * 24 * 60 * 60,
-    staleError: 14 * 24 * 60 * 60,
+    cacheMaxAge: 12 * 60 * 60, // 12 hours
+    staleRevalidate: 7 * 24 * 60 * 60, 
+    staleError: 14 * 24 * 60 * 60, 
   };
 
   if (rpdbkey) {
@@ -172,13 +172,19 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   const language = config.language || DEFAULT_LANGUAGE;
   const rpdbkey = config.rpdbkey;
   const imdbId = id.split(":")[0];
+  
+  const cacheOpts = {
+    cacheMaxAge: 12 * 60 * 60, // 12 hours
+    staleRevalidate: 7 * 24 * 60 * 60, 
+    staleError: 14 * 24 * 60 * 60, 
+  };
 
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
       return await getMeta(type, language, tmdbId, rpdbkey);
     });
 
-    respond(res, resp, { staleRevalidate: 20 * 24 * 60 * 60, staleError: 30 * 24 * 60 * 60 });
+    respond(res, resp, cacheOpts);
   } else if (id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
@@ -186,7 +192,7 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
         return await getMeta(type, language, tmdbId, rpdbkey);
       });
 
-      respond(res, resp, { staleRevalidate: 20 * 24 * 60 * 60, staleError: 30 * 24 * 60 * 60 });
+      respond(res, resp, cacheOpts);
     } else {
       respond(res, { meta: {} });
     }
