@@ -101,15 +101,6 @@ addon.get("/:catalogChoices?/manifest.json", async (req, res) => {
   respond(res, manifest, cacheOpts);
 });
 
-
-
-// New function to fetch metadata with caching
-async function fetchMetadataWithCaching(type, language, id, rpdbkey) {
-  return cacheWrapMeta(`${language}:${type}:${id}`, async () => {
-    return await getMeta(type, language, id, rpdbkey);
-  });
-}
-
 // Catalog Route
 addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) => {
   const { catalogChoices, type, id, extra } = req.params;
@@ -157,23 +148,18 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
     staleError: 14 * 24 * 60 * 60,
   };
 
-  // Use the new fetchMetadataWithCaching function for each item
-  metas.metas = await Promise.all(
-    metas.metas.map(async (meta) => {
-      const modifiedId = meta.id.replace("tmdb:", "");
-      const updatedMeta = await fetchMetadataWithCaching(meta.type, language, modifiedId, rpdbkey);
-      const metaDict = updatedMeta.meta;
-      const imdb_id = metaDict?.imdb_id;
-
-      // Update the metadata with appropriate IDs
-      return {
-        ...metaDict,
-        tmdb_id: meta.id,
-        id: imdb_id || meta.id
-      };
-      // return metaDict;
-    })
-  );
+  if (rpdbkey) {
+    try {
+      metas = JSON.parse(JSON.stringify(metas));
+      metas.metas = await Promise.all(
+        metas.metas.map(async (el) => {
+          const rpdbImage = getRpdbPoster(type, el.id.replace("tmdb:", ""), language, rpdbkey);
+          el.poster = (await checkIfExists(rpdbImage)) ? rpdbImage : el.poster;
+          return el;
+        })
+      );
+    } catch (e) {}
+  }
 
   respond(res, metas, cacheOpts);
 });
