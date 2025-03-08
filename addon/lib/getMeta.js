@@ -15,11 +15,28 @@ const blacklistLogoUrls = [
 async function getMeta(type, language, tmdbId, rpdbkey) {
   if (type === "movie") {
     const meta = await moviedb
-      .movieInfo({id: tmdbId, language, append_to_response: "videos,credits",})
+      .movieInfo({id: tmdbId, language, append_to_response: "videos,credits,release_dates",})
       .then(async (res) => {
+        //  Check release dates
+        //  check results and use key iso_3166_1 to find "US" then check its release dates and gather certification which is not empty
+        const releaseDates = res.release_dates.results;
+        let certification = "";
+        for (const releaseDate of releaseDates) {
+          if (releaseDate.iso_3166_1 === "US") {
+            for (const date of releaseDate.release_dates) {
+              if (date.certification !== "") {
+                certification = date.certification;
+                break;
+              }
+            }
+            break;
+          }
+        }
         const imdbRating = res.imdb_id
           ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toString()
           : res.vote_average.toString();
+
+        const imdbCertification = (certification ? certification : "") + " " + (imdbRating ? imdbRating : "N/A");
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -27,7 +44,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           description: res.overview,
           director: Utils.parseDirector(res.credits),
           genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbRating || "N/A",
+          imdbRating: imdbCertification,
           name: res.title,
           released: new Date(res.release_date),
           slug: Utils.parseSlug(type, res.title, res.imdb_id),
@@ -43,7 +60,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           releaseInfo: res.release_date ? res.release_date.substr(0, 4) : "",
           trailerStreams: Utils.parseTrailerStream(res.videos),
           links: new Array(
-            Utils.parseImdbLink(imdbRating, res.imdb_id),
+            Utils.parseImdbLink(imdbCertification, res.imdb_id),
             Utils.parseShareLink(res.title, res.imdb_id, type),
             ...Utils.parseGenreLink(res.genres, type, language),
             ...Utils.parseCreditsLink(res.credits)
