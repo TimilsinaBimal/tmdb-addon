@@ -13,6 +13,9 @@ const blacklistLogoUrls = [
 ];
 
 async function getMeta(type, language, tmdbId, rpdbkey) {
+  // Extract country code from ISO 3166-1 language format (e.g., "en-US")
+  const country = language.slice(-2);
+  console.log(country);
   if (type === "movie") {
     const meta = await moviedb
       .movieInfo({id: tmdbId, language, append_to_response: "videos,credits,release_dates",})
@@ -22,7 +25,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         const releaseDates = res.release_dates.results;
         let certification = "";
         for (const releaseDate of releaseDates) {
-          if (releaseDate.iso_3166_1 === "US") {
+          if (releaseDate.iso_3166_1 === country) {
             for (const date of releaseDate.release_dates) {
               if (date.certification !== "") {
                 certification = date.certification;
@@ -36,8 +39,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toString()
           : res.vote_average.toString();
 
-        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
-        console.log(imdbCertification);
+        const imdbCertification = (certification ? certification : "N/A") +"\u2003" + (imdbRating ? imdbRating : "N/A");
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -98,15 +100,12 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         const contentRatings = res.content_ratings.results;
         let certification = "";
         for (const ratings of contentRatings) {
-          if (ratings.iso_3166_1 === "US") {
-              if (ratings.rating !== "") {
-                certification = ratings.rating;
-                break;
-            }
-            break;
+          if (ratings.iso_3166_1 === country) {
+              certification = ratings.rating;
+              break;
           }
         }
-        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
+        const imdbCertification = (certification ? certification : "N/A") +"\u2003" + (imdbRating ? imdbRating : "N/A");
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
