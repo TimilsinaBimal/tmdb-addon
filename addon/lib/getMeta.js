@@ -38,8 +38,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
         : res.vote_average.toFixed(1).toString();
 
-        // const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
-        const imdbCertification = certification && imdbRating ? `${certification} | ${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -57,7 +56,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           trailers: Utils.parseTrailers(res.videos),
           background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
           poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
-          runtime: `${Utils.parseRunTime(res.runtime)} ${certification}`,
+          runtime: Utils.parseRunTime(res.runtime),
           id: `tmdb:${tmdbId}`,
           genres: Utils.parseGenres(res.genres),
           releaseInfo: res.release_date ? res.release_date.substr(0, 4) : "",
@@ -105,7 +104,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
               break;
           }
         }
-        const imdbCertification = certification && imdbRating ? `${certification} | ${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
@@ -116,7 +115,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           name: res.name,
           poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
           released: new Date(res.first_air_date),
-          runtime: `${Utils.parseRunTime(runtime)} ${certification}`,
+          runtime: Utils.parseRunTime(runtime),
           status: res.status,
           type: type,
           writer: Utils.parseCreatedBy(res.created_by),
