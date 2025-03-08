@@ -140,8 +140,14 @@ function parseRunTime(runtime) {
   const hours = Math.floor(runtime / 60);
   const minutes = runtime % 60;
 
-  if (runtime > 60) {
-    return hours > 0 ? `${hours}h${minutes}min` : `${minutes}min`;
+  if (runtime >= 60) {
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}min`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${minutes}min`;
+    }
   } else {
     return `${runtime}min`;
   }
