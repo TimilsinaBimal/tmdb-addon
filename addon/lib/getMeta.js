@@ -35,7 +35,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         const imdbRating = res.imdb_id
           ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toString()
           : res.vote_average.toString();
-        const imdbCertification = (certification ? certification : "") + " " + (imdbRating ? imdbRating : "N/A");
+        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -87,18 +87,30 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
     return Promise.resolve({ meta });
   } else {
     const meta = await moviedb
-      .tvInfo({ id: tmdbId, language, append_to_response: "videos,credits,external_ids", })
+      .tvInfo({id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings",})
       .then(async (res) => {
         const imdbRating = res.external_ids.imdb_id
-          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
-          : res.vote_average.toFixed(1).toString();
-        const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
+          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toString()
+          : res.vote_average.toString();
+        const runtime = res.episode_run_time?.[0] ?? res.last_episode_to_air?.runtime ?? res.next_episode_to_air?.runtime ?? null;
+        const contentRatings = res.content_ratings.results;
+        let certification = "";
+        for (const ratings of contentRatings) {
+          if (ratings.iso_3166_1 === "US") {
+              if (ratings.rating !== "") {
+                certification = ratings.rating;
+                break;
+            }
+            break;
+          }
+        }
+        const imdbCertification = (certification ? certification+"\u2003" : "") + (imdbRating ? "\u2003"+imdbRating : "N/A");
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
           description: res.overview,
           genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbRating || "N/A",
+          imdbRating: imdbCertification,
           imdb_id: res.external_ids.imdb_id,
           name: res.name,
           poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
@@ -115,7 +127,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           releaseInfo: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
           videos: [],
           links: new Array(
-            Utils.parseImdbLink(imdbRating, res.external_ids.imdb_id),
+            Utils.parseImdbLink(imdbCertification, res.external_ids.imdb_id),
             Utils.parseShareLink(res.name, res.external_ids.imdb_id, type),
             ...Utils.parseGenreLink(res.genres, type, language),
             ...Utils.parseCreditsLink(res.credits)
