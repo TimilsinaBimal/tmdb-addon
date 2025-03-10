@@ -15,11 +15,11 @@ const blacklistLogoUrls = [
 async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
   // Handle user Agent case
   let ageRatingSpacing = "";
-  if (userAgent && userAgent.lowerCase().includes("stremio-apple")){
+  if (userAgent && userAgent.toLowerCase().includes("stremio-apple")){
     ageRatingSpacing = " • ";
   }
-  else if(userAgent.lowerCase().includes("android")){
-    ageRatingSpacing = " | ";
+  else if(userAgent.toLowerCase().includes("android")){
+    ageRatingSpacing = " ";
   }
   else{
     ageRatingSpacing = "\u2003\u2003";
