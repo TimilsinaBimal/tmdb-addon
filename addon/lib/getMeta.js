@@ -12,7 +12,18 @@ const blacklistLogoUrls = [
   "https://assets.fanart.tv/fanart/tv/0/hdtvlogo/-60a02798b7eea.png",
 ];
 
-async function getMeta(type, language, tmdbId, rpdbkey) {
+async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
+  // Handle user Agent case
+  let ageRatingSpacing = "";
+  if (userAgent && userAgent.lowerCase().includes("stremio-apple")){
+    ageRatingSpacing = " • ";
+  }
+  else if(userAgent.lowerCase().includes("android")){
+    ageRatingSpacing = " | ";
+  }
+  else{
+    ageRatingSpacing = "\u2003\u2003";
+  }
   // Extract country code from ISO 3166-1 language format (e.g., "en-US")
   const country = language.slice(-2);
   if (type === "movie") {
@@ -38,7 +49,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
         : res.vote_average.toFixed(1).toString();
 
-        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -104,7 +115,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
               break;
           }
         }
-        const imdbCertification = certification && imdbRating ? `${certification}\u2003\u2003${imdbRating}` : certification || `${imdbRating}`;
+        const imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),

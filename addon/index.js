@@ -175,13 +175,16 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   
   const cacheOpts = {
     cacheMaxAge: 12 * 60 * 60, // 12 hours
-    staleRevalidate: 7 * 24 * 60 * 60, 
+    staleRevalidate: 1 * 24 * 60 * 60,  // 1 day
     staleError: 14 * 24 * 60 * 60, 
   };
 
+  // fetch user-agent from request headers
+  const userAgent = req.headers["user-agent"];
+
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
-      return await getMeta(type, language, tmdbId, rpdbkey);
+      return await getMeta(type, language, tmdbId, rpdbkey, userAgent);
     });
 
     respond(res, resp, cacheOpts);
@@ -189,7 +192,7 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
-        return await getMeta(type, language, tmdbId, rpdbkey);
+        return await getMeta(type, language, tmdbId, rpdbkey, userAgent);
       });
 
       respond(res, resp, cacheOpts);
