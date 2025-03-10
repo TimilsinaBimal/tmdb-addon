@@ -17,7 +17,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
   let ageRatingSpacing = "";
   if (userAgent){
     if (userAgent.toLowerCase().includes("stremio-apple")){
-      ageRatingSpacing = " · "; //Apple
+      ageRatingSpacing = " ⦁ "; //Apple
     }
     else{
       ageRatingSpacing = "\u2003\u2003"; // Browsers and other
@@ -50,8 +50,11 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
         const imdbRating = res.imdb_id
         ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
         : res.vote_average.toFixed(1).toString();
-
-        const imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
+        let imdbCertification = imdbRating;
+        if(userAgent){
+          imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
+        }
+        
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -117,7 +120,10 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
               break;
           }
         }
-        const imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
+        let imdbCertification = imdbRating;
+        if(userAgent){
+          imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
+        }
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
