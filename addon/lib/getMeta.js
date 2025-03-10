@@ -17,14 +17,14 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
   let ageRatingSpacing = "";
   if (userAgent){
     if (userAgent.toLowerCase().includes("stremio-apple")){
-      ageRatingSpacing = " ⦁ "; //Apple
+      ageRatingSpacing = "\u2003⦁\u2003"; //Apple
     }
     else{
       ageRatingSpacing = "\u2003\u2003"; // Browsers and other
     }
   }
   else{
-    ageRatingSpacing = " "; //Android
+    ageRatingSpacing = "\u2003"; //Android
   }
   // Extract country code from ISO 3166-1 language format (e.g., "en-US")
   const country = language.slice(-2);
