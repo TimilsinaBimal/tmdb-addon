@@ -15,14 +15,16 @@ const blacklistLogoUrls = [
 async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
   // Handle user Agent case
   let ageRatingSpacing = "";
-  if (userAgent && userAgent.toLowerCase().includes("stremio-apple")){
-    ageRatingSpacing = " • ";
-  }
-  else if(userAgent.toLowerCase().includes("android")){
-    ageRatingSpacing = " ";
+  if (userAgent){
+    if (userAgent.toLowerCase().includes("stremio-apple")){
+      ageRatingSpacing = " · "; //Apple
+    }
+    else{
+      ageRatingSpacing = "\u2003\u2003"; // Browsers and other
+    }
   }
   else{
-    ageRatingSpacing = "\u2003\u2003";
+    ageRatingSpacing = " "; //Android
   }
   // Extract country code from ISO 3166-1 language format (e.g., "en-US")
   const country = language.slice(-2);
