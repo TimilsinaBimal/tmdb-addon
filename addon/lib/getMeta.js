@@ -17,7 +17,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
   let ageRatingSpacing = "";
   if (userAgent){
     if (userAgent.toLowerCase().includes("stremio-apple")){
-      ageRatingSpacing = "\u2003⦁\u2003"; //Apple
+      ageRatingSpacing = "\u0020\u0020⦁\u0020\u0020"; //Apple
     }
     else{
       ageRatingSpacing = "\u2003\u2003"; // Browsers and other
