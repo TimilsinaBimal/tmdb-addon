@@ -36,6 +36,7 @@ const getCacheHeaders = (opts = {}) => {
 const respond = (res, data, opts = {}) => {
   const cacheHeader = getCacheHeaders(opts);
   if (cacheHeader) res.setHeader("Cache-Control", `${cacheHeader}, public`);
+  res.setHeader('Vary', 'User-Agent');
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Content-Type", "application/json");
