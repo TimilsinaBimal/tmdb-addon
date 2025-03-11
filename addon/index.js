@@ -162,6 +162,7 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
+      const { imdbRating, ageRating } = resp.meta;
       // Modify only if userAgent is not empty or null
       if (userAgent) {
         resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
