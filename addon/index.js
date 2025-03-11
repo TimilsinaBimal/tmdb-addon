@@ -139,7 +139,7 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
   const userAgent = req.headers["user-agent"] || "";
   const tmdbId = id.split(":").pop();
   const imdbId = id.split(":")[0];
-  const spacing = userAgent.includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
+  const spacing = userAgent.toLowerCase().includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
 
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey, userAgent));
