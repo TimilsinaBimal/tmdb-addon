@@ -68,7 +68,7 @@ addon.get("/api/stats", (req, res) => {
 addon.use("/configure", (req, res, next) => {
   const config = parseConfig(req.params.catalogChoices);
   const analytics = require("./utils/analytics");
-  
+
   analytics.trackConfigUpdate({
     language: config.language || DEFAULT_LANGUAGE,
     catalogs: config.catalogs || [],
@@ -90,9 +90,9 @@ addon.get("/:catalogChoices?/manifest.json", async (req, res) => {
   const { catalogChoices } = req.params;
   const config = parseConfig(catalogChoices);
   const manifest = await getManifest(config);
-  
+
   stats.trackInstallation(req.ip);
-  
+
   const cacheOpts = {
     cacheMaxAge: 12 * 60 * 60,
     staleRevalidate: 14 * 24 * 60 * 60,
@@ -108,14 +108,14 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
   const language = config.language || DEFAULT_LANGUAGE;
   const rpdbkey = config.rpdbkey;
   const sessionId = config.sessionId;
-  
+
   const { genre, skip, search } = extra
     ? Object.fromEntries(new URLSearchParams(req.url.split("/").pop().split("?")[0].slice(0, -5)).entries())
     : {};
-    
+
   const page = Math.ceil(skip ? skip / 20 + 1 : undefined) || 1;
   let metas = [];
-  
+
   try {
     const args = [type, language, page];
 
@@ -144,8 +144,8 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
 
   const cacheOpts = {
     cacheMaxAge: 12 * 60 * 60, // 12 hours
-    staleRevalidate: 7 * 24 * 60 * 60, 
-    staleError: 14 * 24 * 60 * 60, 
+    staleRevalidate: 7 * 24 * 60 * 60,
+    staleError: 14 * 24 * 60 * 60,
   };
 
   if (rpdbkey) {
@@ -164,43 +164,96 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
   respond(res, metas, cacheOpts);
 });
 
-// Meta Route
-addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
-  const { catalogChoices, type, id } = req.params;
-  const config = parseConfig(catalogChoices);
-  const tmdbId = id.split(":")[1];
-  const language = config.language || DEFAULT_LANGUAGE;
-  const rpdbkey = config.rpdbkey;
-  const imdbId = id.split(":")[0];
-  
-  const cacheOpts = {
-    cacheMaxAge: 12 * 60 * 60, // 12 hours
-    staleRevalidate: 1 * 24 * 60 * 60,  // 1 day
-    staleError: 14 * 24 * 60 * 60, 
-  };
-
+async function fetchMeta(req, type, language, id, rpdbkey){
   // fetch user-agent from request headers
   const userAgent = req.headers["user-agent"];
+  const tmdbId = id.split(":")[1];
+  const imdbId = id.split(":")[0];
+
+  let ageRatingSpacing = "";
+  if (userAgent){
+    if (userAgent.toLowerCase().includes("stremio-apple")){
+      ageRatingSpacing = "\u0020\u0020⦁\u0020\u0020"; //Apple
+    }
+    else{
+      ageRatingSpacing = "\u2003\u2003"; // Browsers and other
+    }
+  }
+  else{
+    ageRatingSpacing = "\u2003"; //Android
+  }
 
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
       return await getMeta(type, language, tmdbId, rpdbkey, userAgent);
     });
+    // modify resp to include ageRating
+    const imdbRating = resp.meta.imdbRating;
+    const ageRating = resp.meta.ageRating
+    let imdbCertification = imdbRating;
+    if(userAgent){
+      imdbCertification = ageRating && imdbRating ? `${ageRating}${ageRatingSpacing}${imdbRating}` : ageRating || `${imdbRating}`;
+    }
+    resp.meta.imdbRating = imdbCertification;
+    return resp;
 
-    respond(res, resp, cacheOpts);
   } else if (id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
-        return await getMeta(type, language, tmdbId, rpdbkey, userAgent);
+        return await getMeta(type, language, tmdbId, rpdbkey);
       });
-
-      respond(res, resp, cacheOpts);
+      // modify resp to include ageRating
+      const imdbRating = resp.meta.imdbRating;
+      const ageRating = resp.meta.ageRating
+      let imdbCertification = imdbRating;
+      if(userAgent){
+        imdbCertification = ageRating && imdbRating ? `${ageRating}${ageRatingSpacing}${imdbRating}` : ageRating || `${imdbRating}`;
+      }
+      resp.meta.imdbRating = imdbCertification;
+      return resp;
     } else {
-      respond(res, { meta: {} });
+      return {
+        meta: null,
+      };
     }
+}}
+
+// Meta Route
+addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
+  const { catalogChoices, type, id } = req.params;
+  const config = parseConfig(catalogChoices);
+  const language = config.language || DEFAULT_LANGUAGE;
+  const rpdbkey = config.rpdbkey;
+  
+
+  const cacheOpts = {
+    cacheMaxAge: 12 * 60 * 60, // 12 hours
+    staleRevalidate: 1 * 24 * 60 * 60,  // 1 day
+    staleError: 14 * 24 * 60 * 60,
+  };
+  meta = await fetchMeta(req, type, language, id, rpdbkey);
+  respond(res, meta, cacheOpts);
+});
+
+addon.get("/:catalogChoices?/catalog/series/calendar-videos/:calendarVideosids.json", async (req, res) => {
+  const { catalogChoices, calendarVideosids } = req.params;
+  const config = parseConfig(catalogChoices);
+  const language = config.language || DEFAULT_LANGUAGE;
+  const ids = calendarVideosids.split(",");
+
+  try {
+    const metasDetailed = await Promise.all(
+      ids.map(async (id) => {
+        const metaResponse = await fetchMeta(req, type, language, id, rpdbkey);
+        return  metaResponse.meta;
+      })
+    );
+    respond(res, { metasDetailed });
+  } catch (e) {
+    res.status(404).send(e?.message || "Not found");
   }
 });
 
-// Export for serverless deployment
+
 module.exports = addon;

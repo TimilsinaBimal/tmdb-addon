@@ -162,7 +162,19 @@ async function getManifest(config) {
   }
 
   const descriptionSuffix = language && language !== DEFAULT_LANGUAGE ? ` with ${language} language.` : ".";
-
+  catalogs.push({
+    type: "series",
+    id: "calendar-videos",
+    extra: [
+      {
+        name: "calendarVideosIds",
+        isRequired: true,
+        options: [],
+        optionsLimit: 100
+      }
+    ],
+    name: "Calendar Videos"
+  });
   return {
     id: packageJson.name,
     version: packageJson.version,
@@ -177,6 +189,8 @@ async function getManifest(config) {
     behaviorHints: {
       configurable: true,
       configurationRequired: false,
+      newEpisodeNotifications: true
+
     },
     catalogs,
   };

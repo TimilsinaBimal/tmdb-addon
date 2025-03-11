@@ -12,20 +12,7 @@ const blacklistLogoUrls = [
   "https://assets.fanart.tv/fanart/tv/0/hdtvlogo/-60a02798b7eea.png",
 ];
 
-async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
-  // Handle user Agent case
-  let ageRatingSpacing = "";
-  if (userAgent){
-    if (userAgent.toLowerCase().includes("stremio-apple")){
-      ageRatingSpacing = "\u0020\u0020⦁\u0020\u0020"; //Apple
-    }
-    else{
-      ageRatingSpacing = "\u2003\u2003"; // Browsers and other
-    }
-  }
-  else{
-    ageRatingSpacing = "\u2003"; //Android
-  }
+async function getMeta(type, language, tmdbId, rpdbkey) {
   // Extract country code from ISO 3166-1 language format (e.g., "en-US")
   const country = language.slice(-2);
   if (type === "movie") {
@@ -35,25 +22,38 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
         //  Check release dates
         //  check results and use key iso_3166_1 to find "US" then check its release dates and gather certification which is not empty
         const releaseDates = res.release_dates.results;
-        let certification = "";
+        let ageRating = "";
+        // First, try to find the certification for the specified country
         for (const releaseDate of releaseDates) {
           if (releaseDate.iso_3166_1 === country) {
             for (const date of releaseDate.release_dates) {
               if (date.certification !== "") {
-                certification = date.certification;
+                ageRating = date.certification;
                 break;
               }
             }
-            break;
+            if (ageRating) break;
+          }
+        }
+
+        // If no certification is found for the specified country, fallback to US certification
+        if (!ageRating) {
+          for (const releaseDate of releaseDates) {
+            if (releaseDate.iso_3166_1 === "US") {
+              for (const date of releaseDate.release_dates) {
+                if (date.certification !== "") {
+                  ageRating = date.certification;
+                  break;
+                }
+              }
+              if (ageRating) break;
+            }
           }
         }
         const imdbRating = res.imdb_id
         ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
         : res.vote_average.toFixed(1).toString();
-        let imdbCertification = imdbRating;
-        if(userAgent){
-          imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
-        }
+        
         
         const resp = {
           imdb_id: res.imdb_id,
@@ -62,7 +62,8 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
           description: res.overview,
           director: Utils.parseDirector(res.credits),
           genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbCertification,
+          imdbRating: imdbRating,
+          ageRating: ageRating,
           name: res.title,
           released: new Date(res.release_date),
           slug: Utils.parseSlug(type, res.title, res.imdb_id),
@@ -78,7 +79,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
           releaseInfo: res.release_date ? res.release_date.substr(0, 4) : "",
           trailerStreams: Utils.parseTrailerStream(res.videos),
           links: new Array(
-            Utils.parseImdbLink(imdbCertification, res.imdb_id),
+            Utils.parseImdbLink(imdbRating, res.imdb_id),
             Utils.parseShareLink(res.title, res.imdb_id, type),
             ...Utils.parseGenreLink(res.genres, type, language),
             ...Utils.parseCreditsLink(res.credits)
@@ -113,23 +114,30 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
         : res.vote_average.toString();
         const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
-        let certification = "";
+        let ageRating = "";
         for (const ratings of contentRatings) {
           if (ratings.iso_3166_1 === country) {
-              certification = ratings.rating;
+              ageRating = ratings.rating;
               break;
           }
         }
-        let imdbCertification = imdbRating;
-        if(userAgent){
-          imdbCertification = certification && imdbRating ? `${certification}${ageRatingSpacing}${imdbRating}` : certification || `${imdbRating}`;
+
+        // If ageRating is not found for the specified country, use US rating as fallback
+        if (!ageRating) {
+          for (const ratings of contentRatings) {
+            if (ratings.iso_3166_1 === "US") {
+              ageRating = ratings.rating;
+              break;
+            }
+          }
         }
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
           description: res.overview,
           genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbCertification,
+          imdbRating: imdbRating,
+          ageRating: ageRating,
           imdb_id: res.external_ids.imdb_id,
           name: res.name,
           poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
@@ -146,7 +154,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, userAgent) {
           releaseInfo: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
           videos: [],
           links: new Array(
-            Utils.parseImdbLink(imdbCertification, res.external_ids.imdb_id),
+            Utils.parseImdbLink(imdbRating, res.external_ids.imdb_id),
             Utils.parseShareLink(res.name, res.external_ids.imdb_id, type),
             ...Utils.parseGenreLink(res.genres, type, language),
             ...Utils.parseCreditsLink(res.credits)
