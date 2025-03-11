@@ -152,6 +152,16 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
       const { imdbRating, ageRating } = resp.meta;
       resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+      //  Also change in links
+      //  change name to certification
+      if (resp.meta.links) {
+        resp.meta.links = resp.meta.links.map((link) => {
+          if (link.category === "imdb") {
+            link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+          }
+          return link;
+        });
+      }
       return resp;
     }
     return { meta: null };
