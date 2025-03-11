@@ -23,7 +23,7 @@ addon.use("/configure", express.static(path.join(__dirname, "../dist")));
 const getCacheHeaders = (opts = {}) => {
   if (!Object.keys(opts).length) return false;
   const headers = {
-    cacheMaxAge: "max-age",
+    cacheMaxAge: "s-maxage",
     staleRevalidate: "stale-while-revalidate",
     staleError: "stale-if-error",
   };
