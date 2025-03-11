@@ -144,16 +144,10 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey, userAgent));
     const { imdbRating, ageRating } = resp.meta;
+    // Modify only if userAgent is not empty or null
+    if (userAgent) {
     resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-    return resp;
-  } else if (id.includes("tt")) {
-    const tmdbId = await getTmdb(type, imdbId);
-    if (tmdbId) {
-      const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
-      const { imdbRating, ageRating } = resp.meta;
-      resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-      //  Also change in links
-      //  change name to certification
+      // Also change in links
       if (resp.meta.links) {
         resp.meta.links = resp.meta.links.map((link) => {
           if (link.category === "imdb") {
@@ -162,6 +156,25 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
           return link;
         });
       }
+    }
+    return resp;
+  } else if (id.includes("tt")) {
+    const tmdbId = await getTmdb(type, imdbId);
+    if (tmdbId) {
+      const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
+      // Modify only if userAgent is not empty or null
+      if (userAgent) {
+        resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+          // Also change in links
+          if (resp.meta.links) {
+            resp.meta.links = resp.meta.links.map((link) => {
+              if (link.category === "imdb") {
+                link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+              }
+              return link;
+            });
+          }
+        }
       return resp;
     }
     return { meta: null };
