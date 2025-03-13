@@ -128,10 +128,10 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
     }
 
     respond(res, metas, {
-      cacheMaxAge: 6 * 60 * 60, // 12 hours
-      cacheMaxAgeVercel: 6 * 60 * 60, // 12 hours
-      staleRevalidate: 7 * 24 * 60 * 60,
-      staleError: 14 * 24 * 60 * 60,
+      cacheMaxAge: 4 * 60 * 60, // 12 hours
+      cacheMaxAgeVercel: 4 * 60 * 60, // 12 hours
+      staleRevalidate: 0.5 * 60 * 60,
+      staleError: 60 * 60,
     });
   } catch (e) {
     res.status(500).send(e.message);
@@ -187,10 +187,10 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   const rpdbkey = config.rpdbkey;
   const meta = await fetchMeta(req, type, language, id, rpdbkey);
   respond(res, meta, {
-    cacheMaxAge: 6 * 60 * 60, // 12 hours
-    cacheMaxAgeVercel: 6 * 60 * 60, // 6 hours
-    staleRevalidate: 1 * 24 * 60 * 60,  // 1 day
-    staleError: 14 * 24 * 60 * 60,
+    cacheMaxAge: 4 * 60 * 60, // 12 hours
+      cacheMaxAgeVercel: 4 * 60 * 60, // 12 hours
+      staleRevalidate: 0.5 * 60 * 60,
+      staleError: 60 * 60,
   });
 });
 
