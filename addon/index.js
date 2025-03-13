@@ -23,7 +23,8 @@ addon.use("/configure", express.static(path.join(__dirname, "../dist")));
 const getCacheHeaders = (opts = {}) => {
   if (!Object.keys(opts).length) return false;
   const headers = {
-    cacheMaxAge: "s-maxage",
+    cacheMaxAgeVercel: "s-maxage",
+    cacheMaxAge: "max-age",
     staleRevalidate: "stale-while-revalidate",
     staleError: "stale-if-error",
   };
@@ -127,7 +128,8 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
     }
 
     respond(res, metas, {
-      cacheMaxAge: 12 * 60 * 60, // 12 hours
+      cacheMaxAge: 6 * 60 * 60, // 12 hours
+      cacheMaxAgeVercel: 6 * 60 * 60, // 12 hours
       staleRevalidate: 7 * 24 * 60 * 60,
       staleError: 14 * 24 * 60 * 60,
     });
@@ -145,8 +147,6 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey, userAgent));
     const { imdbRating, ageRating } = resp.meta;
-    // Modify only if userAgent is not empty or null
-    if (userAgent) {
     resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
       // Also change in links
       if (resp.meta.links) {
@@ -157,7 +157,6 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
           return link;
         });
       }
-    }
     return resp;
   } else if (id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
@@ -165,18 +164,16 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
       const { imdbRating, ageRating } = resp.meta;
       // Modify only if userAgent is not empty or null
-      if (userAgent) {
-        resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-          // Also change in links
-          if (resp.meta.links) {
-            resp.meta.links = resp.meta.links.map((link) => {
-              if (link.category === "imdb") {
-                link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-              }
-              return link;
-            });
+      resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+      // Also change in links
+      if (resp.meta.links) {
+        resp.meta.links = resp.meta.links.map((link) => {
+          if (link.category === "imdb") {
+            link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
           }
-        }
+          return link;
+        });
+      }
       return resp;
     }
     return { meta: null };
@@ -190,7 +187,8 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   const rpdbkey = config.rpdbkey;
   const meta = await fetchMeta(req, type, language, id, rpdbkey);
   respond(res, meta, {
-    cacheMaxAge: 12 * 60 * 60, // 12 hours
+    cacheMaxAge: 6 * 60 * 60, // 12 hours
+    cacheMaxAgeVercel: 6 * 60 * 60, // 6 hours
     staleRevalidate: 1 * 24 * 60 * 60,  // 1 day
     staleError: 14 * 24 * 60 * 60,
   });
