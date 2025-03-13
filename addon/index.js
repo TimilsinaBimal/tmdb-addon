@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const addon = express();
+require("dotenv").config();
 const { getCatalog } = require("./lib/getCatalog");
 const { getSearch } = require("./lib/getSearch");
 const { getManifest, DEFAULT_LANGUAGE } = require("./lib/getManifest");
@@ -13,6 +14,9 @@ const { getRequestToken, getSessionId } = require("./lib/getSession");
 const { getFavorites, getWatchList } = require("./lib/getPersonalLists");
 const analyticsMiddleware = require("./middleware/analytics.middleware");
 const stats = require("./utils/stats");
+
+const { MovieDb } = require("moviedb-promise");
+const moviedb = new MovieDb(process.env.TMDB_API);
 
 // Apply middleware
 addon.use(analyticsMiddleware());
@@ -126,6 +130,24 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
         return el;
       }));
     }
+    
+    metas.metas = await Promise.all(metas.metas.map(async (el) => {
+      try {
+        const tmdbId = el.id.replace("tmdb:", "");
+        const externalIds = type === "movie"
+          ? await moviedb.movieExternalIds({ id: tmdbId })
+          : await moviedb.tvExternalIds({ id: tmdbId });
+  
+        el.moviedb_id = tmdbId; // Store originally used TMDB ID
+  
+        if (externalIds && externalIds.imdb_id) {
+        el.id = externalIds.imdb_id; // Update to IMDB ID if available
+      }
+      } catch (error) {
+        console.error(`Failed to fetch external IDs for ${el.id}:`, error.message || error);
+      }
+      return el;
+    }));
 
     respond(res, metas, {
       cacheMaxAge: 4 * 60 * 60, // 12 hours
