@@ -13,11 +13,29 @@ const blacklistLogoUrls = [
 ];
 
 async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
+  const country = language.slice(-2);
   if (type === "movie") {
     const meta = await moviedb
-      .movieInfo({id: tmdbId, language, append_to_response: "videos,credits",})
+      .movieInfo({ id: tmdbId, language, append_to_response: "videos,credits,release_dates" })
       .then(async (res) => {
         const imdbRating = (res.external_ids?.imdb_id && await getImdbRating(res.external_ids.imdb_id, type)) || res.vote_average.toFixed(1);
+        // Function to find ageRating for a given country
+        const findCertification = (releaseDates, countryCode) => {
+          for (const releaseDate of releaseDates) {
+            if (releaseDate.iso_3166_1 === countryCode) {
+              for (const date of releaseDate.release_dates) {
+                if (date.certification !== "") {
+                  return date.certification;
+                }
+              }
+            }
+          }
+          return ""; // Return empty string if no certification is found
+        };
+
+        const releaseDates = res.release_dates.results;
+        // Attempt to find age certification for the specified country, fallback to US if not found
+        const ageRating = findCertification(releaseDates, country) || findCertification(releaseDates, "US");
         const resp = {
           imdb_id: res.imdb_id,
           cast: Utils.parseCast(res.credits),
@@ -26,6 +44,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
           director: Utils.parseDirector(res.credits),
           genre: Utils.parseGenres(res.genres),
           imdbRating: imdbRating || "N/A",
+          ageRating: ageRating,
           name: res.title,
           released: new Date(res.release_date),
           slug: Utils.parseSlug(type, res.title, res.imdb_id),
@@ -69,16 +88,23 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
     return Promise.resolve({ meta });
   } else {
     const meta = await moviedb
-      .tvInfo({id: tmdbId, language, append_to_response: "videos,credits,external_ids",})
+      .tvInfo({id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings",})
       .then(async (res) => {
         const imdbRating = (res.external_ids?.imdb_id && await getImdbRating(res.external_ids.imdb_id, type)) || res.vote_average.toFixed(1);
         const runtime = res.episode_run_time?.[0] ?? res.last_episode_to_air?.runtime ?? res.next_episode_to_air?.runtime ?? null;
+        const getAgeRating = (ratings, countryCode) =>
+          ratings.find(r => r.iso_3166_1 === countryCode)?.rating || "";
+        
+        // Attempt to find ageRating for the specified country, fallback to US if not found
+        const ageRating = getAgeRating(res.content_ratings.results, country) || getAgeRating(res.content_ratings.results, "US");
+        
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
           description: res.overview,
           genre: Utils.parseGenres(res.genres),
           imdbRating: imdbRating || "N/A",
+          ageRating: ageRating,
           imdb_id: res.external_ids.imdb_id,
           name: res.name,
           poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
@@ -121,9 +147,9 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
         }
         try {
           resp.videos = await getEpisodes(
-            language, 
-            tmdbId, 
-            res.external_ids.imdb_id, 
+            language,
+            tmdbId,
+            res.external_ids.imdb_id,
             res.seasons,
             { hideEpisodeThumbnails: config.hideEpisodeThumbnails }
           );
