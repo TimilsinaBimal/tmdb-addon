@@ -76,10 +76,10 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
                     description: episode.overview,
                     rating: episode.vote_average.toString(),
                     firstAired: new Date(
-                      Date.parse(episode.air_date) + episode.season_number
+                      new Date(Date.parse(episode.air_date) + episode.season_number).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })
                     ),
                     released: new Date(
-                      Date.parse(episode.air_date) + episode.season_number
+                      new Date(Date.parse(episode.air_date) + episode.season_number).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })
                     ),
                   });
                 });
