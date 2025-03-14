@@ -3,6 +3,7 @@ const { MovieDb } = require("moviedb-promise");
 const moviedb = new MovieDb(process.env.TMDB_API);
 const diferentOrder = require("../static/diferentOrder.json");
 const diferentImdbId = require("../static/diferentImdbId.json");
+const moment = require('moment-timezone');
 
 function genSeasonsString(seasons) {
   if (seasons.length <= 20) {
@@ -42,11 +43,11 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
               description: episode.overview,
               rating: episode.vote_average,
               firstAired: difOrder.watchOrderOnly
-                ? new Date(new Date(Date.parse(group.episodes[0].air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }))
-                : new Date(new Date(Date.parse(episode.air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })),
+                ? moment.utc(group.episodes[0].air_date).add(index, 'days').tz('Asia/Kathmandu').toDate()
+                : moment.utc(episode.air_date).add(index, 'days').tz('Asia/Kathmandu').toDate(),
               released: difOrder.watchOrderOnly
-                ? new Date(new Date(Date.parse(group.episodes[0].air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }))
-                : new Date(new Date(Date.parse(episode.air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })),
+                ? moment.utc(group.episodes[0].air_date).add(index, 'days').tz('Asia/Kathmandu').toDate()
+                : moment.utc(episode.air_date).add(index, 'days').tz('Asia/Kathmandu').toDate(),
             }))
           )
           .reduce((a, b) => a.concat(b), [])
@@ -75,12 +76,8 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
                     overview: episode.overview,
                     description: episode.overview,
                     rating: episode.vote_average.toString(),
-                    firstAired: new Date(
-                      new Date(Date.parse(episode.air_date) + episode.season_number).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })
-                    ),
-                    released: new Date(
-                      new Date(Date.parse(episode.air_date) + episode.season_number).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })
-                    ),
+                    firstAired: moment.utc(episode.air_date).tz('Asia/Kathmandu').toDate(),
+                    released: moment.utc(episode.air_date).tz('Asia/Kathmandu').toDate(),
                   });
                 });
               }
