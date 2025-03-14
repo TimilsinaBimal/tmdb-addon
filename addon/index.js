@@ -41,7 +41,7 @@ const getCacheHeaders = (opts = {}) => {
 const respond = (res, data, opts = {}) => {
   const cacheHeader = getCacheHeaders(opts);
   if (cacheHeader) res.setHeader("Cache-Control", `${cacheHeader}, public`);
-  res.setHeader('Vary', 'User-Agent');
+  // res.setHeader('Vary', 'User-Agent');
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Content-Type", "application/json");
@@ -130,19 +130,19 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
         return el;
       }));
     }
-    
+
     metas.metas = await Promise.all(metas.metas.map(async (el) => {
       try {
         const tmdbId = el.id.replace("tmdb:", "");
         const externalIds = type === "movie"
           ? await moviedb.movieExternalIds({ id: tmdbId })
           : await moviedb.tvExternalIds({ id: tmdbId });
-  
+
         el.moviedb_id = tmdbId; // Store originally used TMDB ID
-  
+
         if (externalIds && externalIds.imdb_id) {
-        el.id = externalIds.imdb_id; // Update to IMDB ID if available
-      }
+          el.id = externalIds.imdb_id; // Update to IMDB ID if available
+        }
       } catch (error) {
         console.error(`Failed to fetch external IDs for ${el.id}:`, error.message || error);
       }
@@ -161,41 +161,41 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
 });
 
 const fetchMeta = async (req, type, language, id, rpdbkey) => {
-  const userAgent = req.headers["user-agent"] || "";
+  // const userAgent = req.headers["user-agent"] || "";
   const tmdbId = id.split(":").pop();
   const imdbId = id.split(":")[0];
-  const spacing = userAgent.toLowerCase().includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
+  // const spacing = userAgent.toLowerCase().includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
 
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey, userAgent));
     const { imdbRating, ageRating } = resp.meta;
     resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-      // Also change in links
-      if (resp.meta.links) {
-        resp.meta.links = resp.meta.links.map((link) => {
-          if (link.category === "imdb") {
-            link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-          }
-          return link;
-        });
-      }
+    // Also change in links
+    // if (resp.meta.links) {
+    //   resp.meta.links = resp.meta.links.map((link) => {
+    //     if (link.category === "imdb") {
+    //       link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+    //     }
+    //     return link;
+    //   });
+    // }
     return resp;
   } else if (id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
-      const { imdbRating, ageRating } = resp.meta;
-      // Modify only if userAgent is not empty or null
-      resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-      // Also change in links
-      if (resp.meta.links) {
-        resp.meta.links = resp.meta.links.map((link) => {
-          if (link.category === "imdb") {
-            link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-          }
-          return link;
-        });
-      }
+      // const { imdbRating, ageRating } = resp.meta;
+      // // Modify only if userAgent is not empty or null
+      // resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+      // // Also change in links
+      // if (resp.meta.links) {
+      //   resp.meta.links = resp.meta.links.map((link) => {
+      //     if (link.category === "imdb") {
+      //       link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+      //     }
+      //     return link;
+      //   });
+      // }
       return resp;
     }
     return { meta: null };
@@ -210,9 +210,9 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   const meta = await fetchMeta(req, type, language, id, rpdbkey);
   respond(res, meta, {
     cacheMaxAge: 4 * 60 * 60, // 12 hours
-      cacheMaxAgeVercel: 4 * 60 * 60, // 12 hours
-      staleRevalidate: 0.5 * 60 * 60,
-      staleError: 60 * 60,
+    cacheMaxAgeVercel: 4 * 60 * 60, // 12 hours
+    staleRevalidate: 0.5 * 60 * 60,
+    staleError: 60 * 60,
   });
 });
 
