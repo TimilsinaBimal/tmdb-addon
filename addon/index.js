@@ -168,8 +168,8 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
 
   if (id.includes("tmdb:")) {
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
-    const { imdbRating, ageRating } = resp.meta;
-    resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
+    // const { imdbRating, ageRating } = resp.meta;
+    // resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
     // Also change in links
     // if (resp.meta.links) {
     //   resp.meta.links = resp.meta.links.map((link) => {
