@@ -42,11 +42,11 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
               description: episode.overview,
               rating: episode.vote_average,
               firstAired: difOrder.watchOrderOnly
-                ? new Date(Date.parse(group.episodes[0].air_date) + index)
-                : new Date(Date.parse(episode.air_date) + index),
+                ? new Date(new Date(Date.parse(group.episodes[0].air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }))
+                : new Date(new Date(Date.parse(episode.air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })),
               released: difOrder.watchOrderOnly
-                ? new Date(Date.parse(group.episodes[0].air_date) + index)
-                : new Date(Date.parse(episode.air_date) + index),
+                ? new Date(new Date(Date.parse(group.episodes[0].air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }))
+                : new Date(new Date(Date.parse(episode.air_date) + index).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })),
             }))
           )
           .reduce((a, b) => a.concat(b), [])
