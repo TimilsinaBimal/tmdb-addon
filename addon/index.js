@@ -167,7 +167,7 @@ const fetchMeta = async (req, type, language, id, rpdbkey) => {
   // const spacing = userAgent.toLowerCase().includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
 
   if (id.includes("tmdb:")) {
-    const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey, userAgent));
+    const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
     const { imdbRating, ageRating } = resp.meta;
     resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
     // Also change in links
