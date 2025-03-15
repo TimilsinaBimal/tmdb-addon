@@ -43,11 +43,11 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
               description: episode.overview,
               rating: episode.vote_average,
               firstAired: difOrder.watchOrderOnly
-                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00')
-                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00'),
+                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').toDate()
+                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
               released: difOrder.watchOrderOnly
-                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00')
-                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00'),
+                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').toDate()
+                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
             }))
           )
           .reduce((a, b) => a.concat(b), [])
@@ -76,8 +76,8 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
                     overview: episode.overview,
                     description: episode.overview,
                     rating: episode.vote_average.toString(),
-                    firstAired: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00'),
-                    released: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').format('YYYY-MM-DDTHH:mm:00'),
+                    firstAired: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
+                    released: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
                   });
                 });
               }
