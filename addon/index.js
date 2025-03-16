@@ -12,7 +12,6 @@ const { getTrending } = require("./lib/getTrending");
 const { parseConfig, getRpdbPoster, checkIfExists } = require("./utils/parseProps");
 const { getRequestToken, getSessionId } = require("./lib/getSession");
 const { getFavorites, getWatchList } = require("./lib/getPersonalLists");
-const stats = require("./utils/stats");
 
 const { MovieDb } = require("moviedb-promise");
 const moviedb = new MovieDb(process.env.TMDB_API);
@@ -75,7 +74,6 @@ addon.get("/:catalogChoices?/configure", (req, res) => {
 addon.get("/:catalogChoices?/manifest.json", async (req, res) => {
   const config = parseConfig(req.params.catalogChoices);
   const manifest = await getManifest(config);
-  stats.trackInstallation(req.ip);
 
   const cacheOpts = {
     cacheMaxAge: 12 * 60 * 60,

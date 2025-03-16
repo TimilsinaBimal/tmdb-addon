@@ -89,9 +89,6 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
         }
-        if (resp.logo && blacklistLogoUrls.includes(resp.logo)) {
-          delete resp.logo;
-        }
         return resp;
       })
       .catch(console.error);
