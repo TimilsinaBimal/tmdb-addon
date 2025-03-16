@@ -3,14 +3,8 @@ const { MovieDb } = require("moviedb-promise");
 const Utils = require("../utils/parseProps");
 const moviedb = new MovieDb(process.env.TMDB_API);
 const { getEpisodes } = require("./getEpisodes");
-const { getLogo, getTvLogo } = require("./getLogo");
 const { getImdbRating } = require("./getImdbRating");
 
-
-const blacklistLogoUrls = [
-  // fanart bug, responds with "The Crime" logo for all IDs it considers invalid
-  "https://assets.fanart.tv/fanart/tv/0/hdtvlogo/-60a02798b7eea.png",
-];
 
 async function getMeta(type, language, tmdbId, rpdbkey) {
   // Extract country code from ISO 3166-1 language format (e.g., "en-US")
@@ -90,16 +84,13 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           },
         };
         try {
-          resp.logo = await getLogo(tmdbId, language, res.original_language);
+          resp.logo = `https://images.metahub.space/logo/medium/${res.imdb_id}/img`;
         } catch (e) {
           console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
         }
         if (resp.logo && blacklistLogoUrls.includes(resp.logo)) {
           delete resp.logo;
-        }
-        if (resp.logo) {
-          resp.logo = resp.logo.replace("http://", "https://")
         }
         return resp;
       })
@@ -167,16 +158,10 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           }
         };
         try {
-          resp.logo = await getTvLogo(res.external_ids.tvdb_id, res.id, language, res.original_language);
+          resp.logo = `https://images.metahub.space/logo/medium/${res.external_ids.imdb_id}/img`;
         } catch (e) {
           console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
           console.log((e || {}).message || "unknown error");
-        }
-        if (resp.logo && blacklistLogoUrls.includes(resp.logo || '')) {
-          delete resp.logo;
-        }
-        if (resp.logo) {
-          resp.logo = resp.logo.replace("http://", "https://")
         }
         try {
           resp.videos = await getEpisodes(language, tmdbId, res.external_ids.imdb_id, res.seasons);

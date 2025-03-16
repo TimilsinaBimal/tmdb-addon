@@ -12,14 +12,11 @@ const { getTrending } = require("./lib/getTrending");
 const { parseConfig, getRpdbPoster, checkIfExists } = require("./utils/parseProps");
 const { getRequestToken, getSessionId } = require("./lib/getSession");
 const { getFavorites, getWatchList } = require("./lib/getPersonalLists");
-const analyticsMiddleware = require("./middleware/analytics.middleware");
 const stats = require("./utils/stats");
 
 const { MovieDb } = require("moviedb-promise");
 const moviedb = new MovieDb(process.env.TMDB_API);
 
-// Apply middleware
-addon.use(analyticsMiddleware());
 addon.use(express.static(path.join(__dirname, "../dist")));
 addon.use("/streaming", express.static(path.join(__dirname, "../public/streaming")));
 addon.use("/configure", express.static(path.join(__dirname, "../dist")));
@@ -57,8 +54,6 @@ addon.get("/request_token", async (req, res) => {
 addon.get("/session_id", async (req, res) => {
   respond(res, await getSessionId(req.query.request_token));
 });
-
-addon.get("/api/stats", (req, res) => respond(res, stats.getStats()));
 
 addon.use("/configure", (req, res, next) => {
   const config = parseConfig(req.params.catalogChoices);
