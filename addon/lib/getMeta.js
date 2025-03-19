@@ -98,8 +98,8 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
       .tvInfo({ id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings", })
       .then(async (res) => {
         const imdbRating = res.external_ids.imdb_id
-          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toString()
-          : res.vote_average.toString();
+          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
+          : res.vote_average.toFixed(1).toString();
         const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
         let ageRating = "";
