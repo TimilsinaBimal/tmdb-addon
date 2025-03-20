@@ -3,7 +3,6 @@ const { MovieDb } = require("moviedb-promise");
 const moviedb = new MovieDb(process.env.TMDB_API);
 const diferentOrder = require("../static/diferentOrder.json");
 const diferentImdbId = require("../static/diferentImdbId.json");
-const moment = require('moment-timezone');
 
 function genSeasonsString(seasons) {
   if (seasons.length <= 20) {
@@ -43,11 +42,11 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
               description: episode.overview,
               rating: episode.vote_average,
               firstAired: difOrder.watchOrderOnly
-                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').toDate()
-                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
+                ? new Date(Date.parse(group.episodes[0].air_date) + index)
+                : new Date(Date.parse(episode.air_date) + index),
               released: difOrder.watchOrderOnly
-                ? moment.utc(group.episodes[0].air_date).tz('Asia/Kathmandu').add(1, 'days').toDate()
-                : moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
+                ? new Date(Date.parse(group.episodes[0].air_date) + index)
+                : new Date(Date.parse(episode.air_date) + index),
             }))
           )
           .reduce((a, b) => a.concat(b), [])
@@ -76,8 +75,12 @@ async function getEpisodes(language, tmdbId, imdb_id, seasons) {
                     overview: episode.overview,
                     description: episode.overview,
                     rating: episode.vote_average.toString(),
-                    firstAired: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
-                    released: moment.utc(episode.air_date).tz('Asia/Kathmandu').add(1, 'days').toDate(),
+                    firstAired: new Date(
+                      Date.parse(episode.air_date) + episode.season_number
+                    ),
+                    released: new Date(
+                      Date.parse(episode.air_date) + episode.season_number
+                    ),
                   });
                 });
               }
