@@ -170,6 +170,9 @@ function parseMedia(el, type, genreList = []) {
     ? el.genre_ids.map(genre => genreList.find((x) => x.id === genre)?.name || 'Unknown')
     : [];
 
+  const releasedDateString = type === 'movie' ? el.release_date : el.first_air_date;
+  const releasedDate = releasedDateString ? new Date(releasedDateString) : null;
+
   return {
     id: `tmdb:${el.id}`,
     name: type === 'movie' ? el.title : el.name,
@@ -178,9 +181,9 @@ function parseMedia(el, type, genreList = []) {
     background: `https://image.tmdb.org/t/p/original${el.backdrop_path}`,
     posterShape: "regular",
     imdbRating: el.vote_average ? el.vote_average.toFixed(1) : 'N/A',
-    year: type === 'movie' ? (el.release_date ? el.release_date.substr(0, 4) : "") : (el.first_air_date ? el.first_air_date.substr(0, 4) : ""),
+    year: releasedDate ? releasedDate.getFullYear().toString() : '',
     type: type === 'movie' ? type : 'series',
-    released: type === 'movie' ? el.release_date : el.first_air_date,
+    released: releasedDate,
     description: el.overview,
   };
 }
