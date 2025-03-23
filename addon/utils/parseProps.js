@@ -166,7 +166,7 @@ async function parsePoster(type, id, poster, language, rpdbkey) {
 }
 
 function parseMedia(el, type, genreList = []) {
-  const genres = Array.isArray(el.genre_ids) 
+  const genres = Array.isArray(el.genre_ids)
     ? el.genre_ids.map(genre => genreList.find((x) => x.id === genre)?.name || 'Unknown')
     : [];
 
@@ -180,6 +180,7 @@ function parseMedia(el, type, genreList = []) {
     imdbRating: el.vote_average ? el.vote_average.toFixed(1) : 'N/A',
     year: type === 'movie' ? (el.release_date ? el.release_date.substr(0, 4) : "") : (el.first_air_date ? el.first_air_date.substr(0, 4) : ""),
     type: type === 'movie' ? type : 'series',
+    released: type === 'movie' ? el.release_date : el.first_air_date,
     description: el.overview,
   };
 }

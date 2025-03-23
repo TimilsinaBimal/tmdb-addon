@@ -116,14 +116,6 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
       }
     }
 
-    if (rpdbkey && metas?.metas?.length) {
-      metas.metas = await Promise.all(metas.metas.map(async el => {
-        const img = getRpdbPoster(type, el.id.replace("tmdb:", ""), language, rpdbkey);
-        el.poster = await checkIfExists(img) ? img : el.poster;
-        return el;
-      }));
-    }
-
     metas.metas = await Promise.all(metas.metas.map(async (el) => {
       try {
         const tmdbId = el.id.replace("tmdb:", "");
@@ -131,7 +123,7 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
           ? await moviedb.movieExternalIds({ id: tmdbId })
           : await moviedb.tvExternalIds({ id: tmdbId });
 
-        el.moviedb_id = tmdbId; // Store originally used TMDB ID
+        el[type === "movie" ? "moviedb_id" : "tvdb_id"] = tmdbId; // Store originally used ID based on type
 
         if (externalIds && externalIds.imdb_id) {
           el.id = externalIds.imdb_id; // Update to IMDB ID if available
