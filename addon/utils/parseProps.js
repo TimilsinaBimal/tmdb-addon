@@ -80,7 +80,7 @@ function parseGenreLink(genres, type, language) {
       category: "Genres",
       url: `stremio:///discover/${encodeURIComponent(
         process.env.HOST_NAME
-      )}%2F${language}%2Fmanifest.json/${type}/tmdb.top?genre=${encodeURIComponent(
+      )}%2Fmanifest.json/${type}/tmdb.top?genre=${encodeURIComponent(
         genre.name
       )}`,
     };
