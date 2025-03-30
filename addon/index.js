@@ -83,6 +83,41 @@ addon.get("/:catalogChoices?/manifest.json", async (req, res) => {
   respond(res, manifest, cacheOpts);
 });
 
+const BATCH_SIZE = 20; // Set based on TMDB rate limits
+
+// Function to process in batches
+async function fetchImdbIdsInBatches(metas, type) {
+  const batchedMetas = [];
+
+  for (let i = 0; i < metas.length; i += BATCH_SIZE) {
+    const batch = metas.slice(i, i + BATCH_SIZE);
+
+    const batchPromises = batch.map(async (el) => {
+      try {
+        const tmdbId = el.id.replace("tmdb:", "");
+        const externalIds = type === "movie"
+          ? await moviedb.movieExternalIds({ id: tmdbId })
+          : await moviedb.tvExternalIds({ id: tmdbId });
+
+        el[type === "movie" ? "moviedb_id" : "tvdb_id"] = tmdbId;
+
+        if (externalIds && externalIds.imdb_id) {
+          el.id = externalIds.imdb_id;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch external IDs for ${el.id}:`, error.message || error);
+      }
+      return el;
+    });
+
+    // Wait for all requests in the current batch to complete
+    batchedMetas.push(...(await Promise.all(batchPromises)));
+  }
+
+  return batchedMetas;
+}
+
+
 addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) => {
   const { catalogChoices, type, id, extra } = req.params;
   const config = parseConfig(catalogChoices);
@@ -116,23 +151,7 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
       }
     }
 
-    metas.metas = await Promise.all(metas.metas.map(async (el) => {
-      try {
-        const tmdbId = el.id.replace("tmdb:", "");
-        const externalIds = type === "movie"
-          ? await moviedb.movieExternalIds({ id: tmdbId })
-          : await moviedb.tvExternalIds({ id: tmdbId });
-
-        el[type === "movie" ? "moviedb_id" : "tvdb_id"] = tmdbId; // Store originally used ID based on type
-
-        if (externalIds && externalIds.imdb_id) {
-          el.id = externalIds.imdb_id; // Update to IMDB ID if available
-        }
-      } catch (error) {
-        console.error(`Failed to fetch external IDs for ${el.id}:`, error.message || error);
-      }
-      return el;
-    }));
+    metas.metas = await fetchImdbIdsInBatches(metas.metas, type);
 
     respond(res, metas, {
       cacheMaxAge: 4 * 60 * 60, // 12 hours
