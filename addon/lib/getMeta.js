@@ -5,173 +5,86 @@ const moviedb = new MovieDb(process.env.TMDB_API);
 const { getEpisodes } = require("./getEpisodes");
 const { getImdbRating } = require("./getImdbRating");
 
-
 async function getMeta(type, language, tmdbId, rpdbkey) {
-  // Extract country code from ISO 3166-1 language format (e.g., "en-US")
   const country = language.slice(-2);
-  if (type === "movie") {
-    const meta = await moviedb
-      .movieInfo({ id: tmdbId, language, append_to_response: "videos,credits,release_dates", })
-      .then(async (res) => {
-        //  Check release dates
-        //  check results and use key iso_3166_1 to find "US" then check its release dates and gather certification which is not empty
-        const releaseDates = res.release_dates.results;
-        let ageRating = "";
-        // First, try to find the certification for the specified country
-        for (const releaseDate of releaseDates) {
-          if (releaseDate.iso_3166_1 === country) {
-            for (const date of releaseDate.release_dates) {
-              if (date.certification !== "") {
-                ageRating = date.certification;
-                break;
-              }
-            }
-            if (ageRating) break;
-          }
-        }
+  const mediaType = type === "movie" ? "movieInfo" : "tvInfo";
+  const appendResponse = type === "movie" ? "videos,credits,release_dates" : "videos,credits,external_ids,content_ratings";
 
-        // If no certification is found for the specified country, fallback to US certification
-        if (!ageRating) {
-          for (const releaseDate of releaseDates) {
-            if (releaseDate.iso_3166_1 === "US") {
-              for (const date of releaseDate.release_dates) {
-                if (date.certification !== "") {
-                  ageRating = date.certification;
-                  break;
-                }
-              }
-              if (ageRating) break;
-            }
-          }
-        }
-        const imdbRating = res.imdb_id
-          ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
-          : res.vote_average.toFixed(1).toString();
+  try {
+    const res = await moviedb[mediaType]({ id: tmdbId, language, append_to_response: appendResponse });
 
+    // Fetch IMDb rating in parallel
+    const imdbId = type === "movie" ? res.imdb_id : res.external_ids?.imdb_id;
+    const imdbRatingPromise = imdbId ? getImdbRating(imdbId, type) : null;
 
-        const resp = {
-          imdb_id: res.imdb_id,
-          cast: Utils.parseCast(res.credits),
-          country: Utils.parseCoutry(res.production_countries),
-          description: res.overview,
-          director: Utils.parseDirector(res.credits),
-          genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbRating,
-          ageRating: ageRating,
-          name: res.title,
-          released: new Date(res.release_date),
-          slug: Utils.parseSlug(type, res.title, res.imdb_id),
-          type: type,
-          writer: Utils.parseWriter(res.credits),
-          year: res.release_date ? res.release_date.substr(0, 4) : "",
-          trailers: Utils.parseTrailers(res.videos),
-          background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
-          poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
-          runtime: Utils.parseRunTime(res.runtime),
-          id: `tmdb:${tmdbId}`,
-          genres: Utils.parseGenres(res.genres),
-          releaseInfo: res.release_date ? res.release_date.substr(0, 4) : "",
-          trailerStreams: Utils.parseTrailerStream(res.videos),
-          links: new Array(
-            Utils.parseImdbLink(imdbRating, res.imdb_id),
-            Utils.parseShareLink(res.title, res.imdb_id, type),
-            ...Utils.parseGenreLink(res.genres, type, language),
-            ...Utils.parseCreditsLink(res.credits)
-          ),
-          behaviorHints: {
-            defaultVideoId: res.imdb_id ? res.imdb_id : `tmdb:${res.id}`,
-            hasScheduledVideos: false
-          },
-        };
-        try {
-          resp.logo = `https://images.metahub.space/logo/medium/${res.imdb_id}/img`;
-        } catch (e) {
-          console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
-          console.log((e || {}).message || "unknown error");
-        }
-        return resp;
-      })
-      .catch(console.error);
-    return Promise.resolve({ meta });
-  } else {
-    const meta = await moviedb
-      .tvInfo({ id: tmdbId, language, append_to_response: "videos,credits,external_ids,content_ratings", })
-      .then(async (res) => {
-        const imdbRating = res.external_ids.imdb_id
-          ? await getImdbRating(res.external_ids.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
-          : res.vote_average.toFixed(1).toString();
-        const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
-        const contentRatings = res.content_ratings.results;
-        let ageRating = "";
-        for (const ratings of contentRatings) {
-          if (ratings.iso_3166_1 === country) {
-            ageRating = ratings.rating;
-            break;
-          }
-        }
+    // Extract ageRating efficiently
+    const ratings = type === "movie" ? res.release_dates?.results : res.content_ratings?.results;
+    let ageRating = getAgeRating(ratings, country) || getAgeRating(ratings, "US");
 
-        // If ageRating is not found for the specified country, use US rating as fallback
-        if (!ageRating) {
-          for (const ratings of contentRatings) {
-            if (ratings.iso_3166_1 === "US") {
-              ageRating = ratings.rating;
-              break;
-            }
-          }
-        }
-        const resp = {
-          cast: Utils.parseCast(res.credits),
-          country: Utils.parseCoutry(res.production_countries),
-          description: res.overview,
-          genre: Utils.parseGenres(res.genres),
-          imdbRating: imdbRating,
-          ageRating: ageRating,
-          imdb_id: res.external_ids.imdb_id,
-          name: res.name,
-          poster: await Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
-          released: new Date(res.first_air_date),
-          runtime: Utils.parseRunTime(runtime),
-          status: res.status,
-          type: type,
-          writer: Utils.parseCreatedBy(res.created_by),
-          year: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
-          background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
-          slug: Utils.parseSlug(type, res.name, res.external_ids.imdb_id),
-          id: `tmdb:${tmdbId}`,
-          genres: Utils.parseGenres(res.genres),
-          releaseInfo: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
-          videos: [],
-          links: new Array(
-            Utils.parseImdbLink(imdbRating, res.external_ids.imdb_id),
-            Utils.parseShareLink(res.name, res.external_ids.imdb_id, type),
-            ...Utils.parseGenreLink(res.genres, type, language),
-            ...Utils.parseCreditsLink(res.credits)
-          ),
-          trailers: Utils.parseTrailers(res.videos),
-          trailerStreams: Utils.parseTrailerStream(res.videos),
-          behaviorHints: {
-            defaultVideoId: null,
-            hasScheduledVideos: true
-          }
-        };
-        try {
-          resp.logo = `https://images.metahub.space/logo/medium/${res.external_ids.imdb_id}/img`;
-        } catch (e) {
-          console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
-          console.log((e || {}).message || "unknown error");
-        }
-        try {
-          resp.videos = await getEpisodes(language, tmdbId, res.external_ids.imdb_id, res.seasons);
-        } catch (e) {
-          console.log(`warning: episodes could not be retrieved for ${tmdbId} - ${type}`);
-          console.log((e || {}).message || "unknown error");
-        }
-        return resp;
+    // Await IMDb Rating
+    const imdbRating = (await imdbRatingPromise) ?? res.vote_average?.toFixed(1)?.toString();
 
-      })
-      .catch(console.error);
-    return Promise.resolve({ meta });
+    // Parallel poster and videos fetch
+    const [poster, videos] = await Promise.all([
+      Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
+      type === "tv" ? getEpisodes(language, tmdbId, imdbId, res.seasons) : []
+    ]);
+
+    const resp = {
+      imdb_id: imdbId,
+      cast: Utils.parseCast(res.credits),
+      country: Utils.parseCoutry(res.production_countries),
+      description: res.overview,
+      director: type === "movie" ? Utils.parseDirector(res.credits) : undefined,
+      genre: Utils.parseGenres(res.genres),
+      imdbRating,
+      ageRating,
+      name: type === "movie" ? res.title : res.name,
+      released: new Date(type === "movie" ? res.release_date : res.first_air_date),
+      slug: Utils.parseSlug(type, type === "movie" ? res.title : res.name, imdbId),
+      type,
+      writer: type === "movie" ? Utils.parseWriter(res.credits) : Utils.parseCreatedBy(res.created_by),
+      year: (type === "movie" ? res.release_date : res.first_air_date)?.substr(0, 4),
+      trailers: Utils.parseTrailers(res.videos),
+      background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
+      poster,
+      runtime: Utils.parseRunTime(type === "movie" ? res.runtime : res.episode_run_time?.[0]),
+      id: `tmdb:${tmdbId}`,
+      genres: Utils.parseGenres(res.genres),
+      releaseInfo: (type === "movie" ? res.release_date : res.first_air_date)?.substr(0, 4),
+      trailerStreams: Utils.parseTrailerStream(res.videos),
+      links: [
+        Utils.parseImdbLink(imdbRating, imdbId),
+        Utils.parseShareLink(type === "movie" ? res.title : res.name, imdbId, type),
+        ...Utils.parseGenreLink(res.genres, type, language),
+        ...Utils.parseCreditsLink(res.credits)
+      ],
+      behaviorHints: {
+        defaultVideoId: type === "tv" ? null : (imdbId || `tmdb:${res.id}`),
+        hasScheduledVideos: type === "tv"
+      },
+      videos
+    };
+
+    try {
+      resp.logo = `https://images.metahub.space/logo/medium/${imdbId}/img`;
+    } catch (e) {
+      console.warn(`Logo not found for ${tmdbId} - ${type}`);
+    }
+
+    return { meta: resp };
+
+  } catch (error) {
+    console.error(error);
+    return { meta: null };
   }
 }
+
+// Helper function to extract age rating
+function getAgeRating(ratings, country) {
+  return ratings?.find(r => r.iso_3166_1 === country)?.release_dates?.find(d => d.certification)?.certification ||
+    ratings?.find(r => r.iso_3166_1 === country)?.rating;
+}
+
 
 module.exports = { getMeta };
