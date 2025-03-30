@@ -135,7 +135,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           type: type,
           writer: Utils.parseCreatedBy(res.created_by),
           year: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
-          background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
+          background: `https://images.metahub.space/background/medium/${res.external_ids.imdb_id}/img`,
           slug: Utils.parseSlug(type, res.name, res.external_ids.imdb_id),
           id: `tmdb:${tmdbId}`,
           genres: Utils.parseGenres(res.genres),
