@@ -16,34 +16,23 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
         //  Check release dates
         //  check results and use key iso_3166_1 to find "US" then check its release dates and gather certification which is not empty
         const releaseDates = res.release_dates.results;
-        let ageRating = "";
-        // First, try to find the certification for the specified country
-        for (const releaseDate of releaseDates) {
-          if (releaseDate.iso_3166_1 === country) {
-            for (const date of releaseDate.release_dates) {
-              if (date.certification !== "") {
-                ageRating = date.certification;
-                break;
-              }
-            }
-            if (ageRating) break;
-          }
-        }
 
-        // If no certification is found for the specified country, fallback to US certification
-        if (!ageRating) {
+        // Helper function to find certification by country code
+        const findCertification = (countryCode) => {
           for (const releaseDate of releaseDates) {
-            if (releaseDate.iso_3166_1 === "US") {
+            if (releaseDate.iso_3166_1 === countryCode) {
               for (const date of releaseDate.release_dates) {
-                if (date.certification !== "") {
-                  ageRating = date.certification;
-                  break;
+                if (date.certification) {
+                  return date.certification;
                 }
               }
-              if (ageRating) break;
             }
           }
-        }
+          return "";
+        };
+
+        // Try to find certification for the specified country, otherwise fallback to "US"
+        const ageRating = findCertification(country) || findCertification("US");
         const imdbRating = res.imdb_id
           ? await getImdbRating(res.imdb_id, type) ?? res.vote_average.toFixed(1).toString()
           : res.vote_average.toFixed(1).toString();
@@ -102,23 +91,13 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           : res.vote_average.toFixed(1).toString();
         const runtime = res.episode_run_time?.[0] ?? res.next_episode_to_air?.runtime ?? res.last_episode_to_air?.runtime ?? null;
         const contentRatings = res.content_ratings.results;
-        let ageRating = "";
-        for (const ratings of contentRatings) {
-          if (ratings.iso_3166_1 === country) {
-            ageRating = ratings.rating;
-            break;
-          }
-        }
 
-        // If ageRating is not found for the specified country, use US rating as fallback
-        if (!ageRating) {
-          for (const ratings of contentRatings) {
-            if (ratings.iso_3166_1 === "US") {
-              ageRating = ratings.rating;
-              break;
-            }
-          }
-        }
+        const findAgeRating = (countryCode) => {
+          const rating = contentRatings.find(r => r.iso_3166_1 === countryCode);
+          return rating ? rating.rating : "";
+        };
+
+        let ageRating = findAgeRating(country) || findAgeRating("US");
         const resp = {
           cast: Utils.parseCast(res.credits),
           country: Utils.parseCoutry(res.production_countries),
@@ -135,7 +114,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           type: type,
           writer: Utils.parseCreatedBy(res.created_by),
           year: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
-          background: `https://images.metahub.space/background/medium/${res.external_ids.imdb_id}/img`,
+          background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
           slug: Utils.parseSlug(type, res.name, res.external_ids.imdb_id),
           id: `tmdb:${tmdbId}`,
           genres: Utils.parseGenres(res.genres),
