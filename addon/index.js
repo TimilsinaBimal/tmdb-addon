@@ -147,7 +147,7 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
           metas = await getWatchList(type, language, page, genre, sessionId);
           break;
         default:
-          metas = await cacheWrapCatalog(`${language}:${type}:${id}:${genre}:${page}`, () => getCatalog(type, language, page, id, genre, config));
+          metas = await getCatalog(type, language, page, id, genre, config);
       }
     }
 
@@ -164,43 +164,16 @@ addon.get("/:catalogChoices?/catalog/:type/:id/:extra?.json", async (req, res) =
   }
 });
 
-const fetchMeta = async (req, type, language, id, rpdbkey) => {
-  // const userAgent = req.headers["user-agent"] || "";
+const fetchMeta = async (type, language, id, rpdbkey) => {
   const tmdbId = id.split(":").pop();
   const imdbId = id.split(":")[0];
-  // const spacing = userAgent.toLowerCase().includes("stremio-apple") ? "\u0020\u0020⦁\u0020\u0020" : "\u2003\u2003";
 
   if (id.includes("tmdb:")) {
-    const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
-    // const { imdbRating, ageRating } = resp.meta;
-    // resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-    // Also change in links
-    // if (resp.meta.links) {
-    //   resp.meta.links = resp.meta.links.map((link) => {
-    //     if (link.category === "imdb") {
-    //       link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-    //     }
-    //     return link;
-    //   });
-    // }
-    return resp;
+    return getMeta(type, language, tmdbId, rpdbkey);
   } else if (id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
-      const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, () => getMeta(type, language, tmdbId, rpdbkey));
-      // const { imdbRating, ageRating } = resp.meta;
-      // // Modify only if userAgent is not empty or null
-      // resp.meta.imdbRating = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-      // // Also change in links
-      // if (resp.meta.links) {
-      //   resp.meta.links = resp.meta.links.map((link) => {
-      //     if (link.category === "imdb") {
-      //       link.name = ageRating ? `${ageRating}${spacing}${imdbRating || ""}` : imdbRating;
-      //     }
-      //     return link;
-      //   });
-      // }
-      return resp;
+      return getMeta(type, language, tmdbId, rpdbkey);
     }
     return { meta: null };
   }
@@ -211,28 +184,13 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async (req, res) => {
   const config = parseConfig(catalogChoices);
   const language = config.language || DEFAULT_LANGUAGE;
   const rpdbkey = config.rpdbkey;
-  const meta = await fetchMeta(req, type, language, id, rpdbkey);
+  const meta = await fetchMeta(type, language, id, rpdbkey);
   respond(res, meta, {
     cacheMaxAge: 4 * 60 * 60, // 12 hours
     cacheMaxAgeVercel: 4 * 60 * 60, // 12 hours
     staleRevalidate: 0.5 * 60 * 60,
     staleError: 60 * 60,
   });
-});
-
-addon.get("/:catalogChoices?/catalog/series/calendar-videos/:calendarVideosids.json", async (req, res) => {
-  const { catalogChoices, calendarVideosids } = req.params;
-  const config = parseConfig(catalogChoices);
-  const language = config.language || DEFAULT_LANGUAGE;
-  const rpdbkey = config.rpdbkey;
-  const ids = calendarVideosids.split(",");
-
-  try {
-    const metasDetailed = await Promise.all(ids.map(id => fetchMeta(req, "series", language, id, rpdbkey).then(r => r.meta)));
-    respond(res, { metasDetailed });
-  } catch (e) {
-    res.status(500).send(e.message);
-  }
 });
 
 module.exports = addon;

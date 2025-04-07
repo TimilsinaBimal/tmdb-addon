@@ -13,8 +13,6 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
     const meta = await moviedb
       .movieInfo({ id: tmdbId, language, append_to_response: "videos,credits,release_dates", })
       .then(async (res) => {
-        //  Check release dates
-        //  check results and use key iso_3166_1 to find "US" then check its release dates and gather certification which is not empty
         const releaseDates = res.release_dates.results;
 
         // Helper function to find certification by country code
@@ -61,6 +59,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           genres: Utils.parseGenres(res.genres),
           releaseInfo: res.release_date ? res.release_date.substr(0, 4) : "",
           trailerStreams: Utils.parseTrailerStream(res.videos),
+          logo: `https://images.metahub.space/logo/medium/${res.imdb_id}/img`,
           links: new Array(
             Utils.parseImdbLink(imdbRating, res.imdb_id),
             Utils.parseShareLink(res.title, res.imdb_id, type),
@@ -72,12 +71,6 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
             hasScheduledVideos: false
           },
         };
-        try {
-          resp.logo = `https://images.metahub.space/logo/medium/${res.imdb_id}/img`;
-        } catch (e) {
-          console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
-          console.log((e || {}).message || "unknown error");
-        }
         return resp;
       })
       .catch(console.error);
@@ -117,6 +110,7 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
           background: `https://image.tmdb.org/t/p/original${res.backdrop_path}`,
           slug: Utils.parseSlug(type, res.name, res.external_ids.imdb_id),
           id: `tmdb:${tmdbId}`,
+          logo: `https://images.metahub.space/logo/medium/${res.external_ids.imdb_id}/img`,
           genres: Utils.parseGenres(res.genres),
           releaseInfo: Utils.parseYear(res.status, res.first_air_date, res.last_air_date),
           videos: [],
@@ -133,12 +127,6 @@ async function getMeta(type, language, tmdbId, rpdbkey) {
             hasScheduledVideos: true
           }
         };
-        try {
-          resp.logo = `https://images.metahub.space/logo/medium/${res.external_ids.imdb_id}/img`;
-        } catch (e) {
-          console.log(`warning: logo could not be retrieved for ${tmdbId} - ${type}`);
-          console.log((e || {}).message || "unknown error");
-        }
         try {
           resp.videos = await getEpisodes(language, tmdbId, res.external_ids.imdb_id, res.seasons);
         } catch (e) {
