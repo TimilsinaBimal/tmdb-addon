@@ -155,12 +155,14 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async function (req, res) {
   const imdbId = req.params.id.split(":")[0];
 
   if (req.params.id.includes("tmdb:")) {
+    const userAgent = req.headers["user-agent"] || "";
     const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
       return await getMeta(type, language, tmdbId, rpdbkey, {
         hideEpisodeThumbnails: config.hideEpisodeThumbnails === "true",
         enableAgeRating: config.enableAgeRating === "true",
         showAgeRatingInGenres: config.showAgeRatingInGenres !== "false",
-        showAgeRatingWithImdbRating: config.showAgeRatingWithImdbRating === "true"
+        showAgeRatingWithImdbRating: config.showAgeRatingWithImdbRating === "true",
+        userAgent
       });
     });
     const cacheOpts = {
@@ -178,12 +180,14 @@ addon.get("/:catalogChoices?/meta/:type/:id.json", async function (req, res) {
   if (req.params.id.includes("tt")) {
     const tmdbId = await getTmdb(type, imdbId);
     if (tmdbId) {
+      const userAgent = req.headers["user-agent"] || "";
       const resp = await cacheWrapMeta(`${language}:${type}:${tmdbId}`, async () => {
         return await getMeta(type, language, tmdbId, rpdbkey, {
           hideEpisodeThumbnails: config.hideEpisodeThumbnails === "true",
           enableAgeRating: config.enableAgeRating === "true",
           showAgeRatingInGenres: config.showAgeRatingInGenres !== "false",
-          showAgeRatingWithImdbRating: config.showAgeRatingWithImdbRating === "true"
+          showAgeRatingWithImdbRating: config.showAgeRatingWithImdbRating === "true",
+          userAgent
         });
       });
       const cacheOpts = {

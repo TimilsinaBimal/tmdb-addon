@@ -36,9 +36,10 @@ const getCacheKey = (
   rpdbkey,
   enableAgeRating = false,
   showAgeRatingInGenres = true,
-  showAgeRatingWithImdbRating = false
+  showAgeRatingWithImdbRating = false,
+  deviceType = "generic"
 ) =>
-  `${type}-${language}-${tmdbId}-${rpdbkey}-ageRating:${enableAgeRating}-${showAgeRatingInGenres}-${showAgeRatingWithImdbRating}`;
+  `${type}-${language}-${tmdbId}-${rpdbkey}-ageRating:${enableAgeRating}-${showAgeRatingInGenres}-${showAgeRatingWithImdbRating}-device:${deviceType}`;
 
 const processLogo = (logo) => {
   if (!logo || blacklistLogoUrls.includes(logo)) return null;
@@ -56,9 +57,10 @@ const buildLinks = (
   castCount,
   ageRating = null,
   showAgeRatingInGenres = true,
-  showAgeRatingWithImdbRating = false
+  showAgeRatingWithImdbRating = false,
+  deviceType = "generic"
 ) => [
-    Utils.parseImdbLink(imdbRating, imdbId, ageRating, showAgeRatingWithImdbRating),
+    Utils.parseImdbLink(imdbRating, imdbId, ageRating, showAgeRatingWithImdbRating, deviceType),
     Utils.parseShareLink(title, imdbId, type),
     ...Utils.parseGenreLink(genres, type, language, imdbId, ageRating, showAgeRatingInGenres),
     ...Utils.parseCreditsLink(credits, castCount)
@@ -83,6 +85,7 @@ const buildMovieResponse = async (res, type, language, tmdbId, rpdbkey, config =
   const enableAgeRating = config.enableAgeRating === true || config.enableAgeRating === "true";
   const showAgeRatingInGenres = config.showAgeRatingInGenres !== false && config.showAgeRatingInGenres !== "false";
   const showAgeRatingWithImdbRating = config.showAgeRatingWithImdbRating === true || config.showAgeRatingWithImdbRating === "true";
+  const deviceType = config.deviceType || "generic";
 
   const [poster, logo, imdbRatingRaw, ageRating] = await Promise.all([
     Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
@@ -137,7 +140,8 @@ const buildMovieResponse = async (res, type, language, tmdbId, rpdbkey, config =
       castCount,
       resolvedAgeRating,
       showAgeRatingInGenres,
-      showAgeRatingWithImdbRating
+      showAgeRatingWithImdbRating,
+      deviceType
     ),
     behaviorHints: {
       defaultVideoId: res.imdb_id ? res.imdb_id : `tmdb:${res.id}`,
@@ -166,6 +170,7 @@ const buildTvResponse = async (res, type, language, tmdbId, rpdbkey, config = {}
   const enableAgeRating = config.enableAgeRating === true || config.enableAgeRating === "true";
   const showAgeRatingInGenres = config.showAgeRatingInGenres !== false && config.showAgeRatingInGenres !== "false";
   const showAgeRatingWithImdbRating = config.showAgeRatingWithImdbRating === true || config.showAgeRatingWithImdbRating === "true";
+  const deviceType = config.deviceType || "generic";
 
   const [poster, logo, imdbRatingRaw, episodes, ageRating] = await Promise.all([
     Utils.parsePoster(type, tmdbId, res.poster_path, language, rpdbkey),
@@ -224,7 +229,8 @@ const buildTvResponse = async (res, type, language, tmdbId, rpdbkey, config = {}
       castCount,
       resolvedAgeRating,
       showAgeRatingInGenres,
-      showAgeRatingWithImdbRating
+      showAgeRatingWithImdbRating,
+      deviceType
     ),
     trailers: Utils.parseTrailers(res.videos),
     trailerStreams: Utils.parseTrailerStream(res.videos),
@@ -258,6 +264,7 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
   const enableAgeRating = config.enableAgeRating === true || config.enableAgeRating === "true";
   const showAgeRatingInGenres = config.showAgeRatingInGenres !== false && config.showAgeRatingInGenres !== "false";
   const showAgeRatingWithImdbRating = config.showAgeRatingWithImdbRating === true || config.showAgeRatingWithImdbRating === "true";
+  const deviceType = config.deviceType || "generic";
 
   const cacheKey = getCacheKey(
     type,
@@ -266,7 +273,8 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
     rpdbkey,
     enableAgeRating,
     showAgeRatingInGenres,
-    showAgeRatingWithImdbRating
+    showAgeRatingWithImdbRating,
+    deviceType
   );
   const cachedData = cache.get(cacheKey);
 
@@ -280,13 +288,15 @@ async function getMeta(type, language, tmdbId, rpdbkey, config = {}) {
         ...config,
         enableAgeRating,
         showAgeRatingInGenres,
-        showAgeRatingWithImdbRating
+        showAgeRatingWithImdbRating,
+        deviceType
       })) :
       fetchTvData(tmdbId, language).then(res => buildTvResponse(res, type, language, tmdbId, rpdbkey, {
         ...config,
         enableAgeRating,
         showAgeRatingInGenres,
-        showAgeRatingWithImdbRating
+        showAgeRatingWithImdbRating,
+        deviceType
       }))
     );
 

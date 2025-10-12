@@ -71,9 +71,29 @@ function parseTrailerStream(videos) {
     });
 }
 
-function parseImdbLink(vote_average, imdb_id, ageRating = null, showAgeRatingWithImdbRating = false) {
+function formatImdbDisplay(vote_average, ageRating, showAgeRatingWithImdbRating, deviceType = "generic") {
+  if (!showAgeRatingWithImdbRating || !ageRating) return vote_average;
+
+  const normalized = typeof deviceType === "string" ? deviceType.toLowerCase() : "";
+
+  if (normalized.includes("stremio-apple") || normalized.includes("ios")) {
+    return `${ageRating} · ${vote_average}`;
+  }
+
+  if (!normalized.trim() || normalized.includes("android")) {
+    return `${ageRating} · ${vote_average}`;
+  }
+
+  if (normalized.includes("web") || normalized.includes("desktop") || normalized.includes("browser")) {
+    return `${ageRating}\u2003\u2003${vote_average}`;
+  }
+
+  return `${ageRating}\u2003${vote_average}`;
+}
+
+function parseImdbLink(vote_average, imdb_id, ageRating = null, showAgeRatingWithImdbRating = false, deviceType = "generic") {
   return {
-    name: showAgeRatingWithImdbRating && ageRating ? `${ageRating}\u2003\u2003${vote_average}` : vote_average,
+    name: formatImdbDisplay(vote_average, ageRating, showAgeRatingWithImdbRating, deviceType),
     category: "imdb",
     url: `https://imdb.com/title/${imdb_id}`,
   };
